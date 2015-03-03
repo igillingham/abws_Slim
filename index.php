@@ -17,6 +17,10 @@ require 'testers.php';
 require 'artworks.php';
 require 'prints.php';
 require 'printers.php';
+require 'printformats.php';
+require 'mediums.php';
+require 'gallery.php';
+require 'customer.php';
 
 $app->run();
 

@@ -1,6 +1,6 @@
 <?php
 
-$app->get('/print/id/:awid', function ($awid) use ($app)
+$app->get('/prints/id/:awid', function ($awid) use ($app)
     {
 
     $db = db_connect();

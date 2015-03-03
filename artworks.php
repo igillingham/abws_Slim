@@ -20,6 +20,36 @@ $app->get('/aw/name/:id', function ($id) use ($app)
 
     });
 
+$app->get('/aw/details/:id', function ($id) use ($app)
+    {
+
+    $db = db_connect();
+    $stmt = $db->prepare ( 'SELECT name,medium,present_location,original_selling_price, original_date_of_sale,limited_edition,number_sold,number_of_prints,information,image_filename,customer_id FROM artwork WHERE id=?' );
+    $stmt->bind_param ( "i", $id );
+    $stmt->execute ();
+    $stmt->bind_result ( $artwork_name, $medium, $present_location, $original_selling_price, $original_date_of_sale, $limited_edition, $number_sold, $number_of_prints, $information, $image_filename, $customer_id );
+    while ( $stmt->fetch () )
+        {
+        break;
+        }
+    $stmt->close ();
+    $result = array("artwork" => array ("id"     => $id, 
+                                        "name"   => $artwork_name, 
+                                        "medium" => $medium,
+                                        "present_location" => $present_location,
+                                        "original_selling_pric" => $original_selling_price,
+                                        "original_date_of_sale" => $original_date_of_sale,
+                                        "limited_edition" => $limited_edition,
+                                        "number_sold" => $number_sold,
+                                        "number_of_prints" => $number_of_prints,
+                                        "information" => $information,
+                                        "image_filename" => $image_filename,
+                                        "customer_id" => $customer_id));
+    $app->response->write(json_encode($result));
+    $db->close ();
+    });
+
+
 $app->get('/aw/names/', function () use ($app)
     {
     $db = db_connect();
