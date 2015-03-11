@@ -1,42 +1,172 @@
 <?php
-
+// handle GET requests for /medium/:id
 $app->get('/medium/:id', function ($id) use ($app)
     {
-    $db = db_connect();
-    $db->autocommit ( FALSE );
-    $stmt = $db->prepare ( 'SELECT id, medium FROM medium WHERE id=?' );
-    $stmt->bind_param ( "i", $id );
-    $stmt->execute ();
-    $stmt->bind_result ( $id, $medium );
-    while ( $stmt->fetch () )
+    try
         {
-        break;
+        // query database for single medium record
+        $record = R::findOne('medium', 'id=?', array($id));
+
+        if ($record)
+            {
+            // if found, return JSON response
+            $app->response()->header('Content-Type', 'application/json');
+            echo json_encode(R::exportAll($record));
+            }
+        else
+            {
+            // else throw exception
+            throw new ResourceNotFoundException();
+            }
         }
-    $stmt->close ();
-    $result = array("medium" => array ("id" => $id, "medium" => $medium));
-    $app->response->write(json_encode($result));
+    catch (ResourceNotFoundException $e)
+        {
+        // return 404 server error
+        $app->response()->status(404);
+        }
+    catch (Exception $e)
+        {
+        $app->response()->status(400);
+        $app->response()->header('X-Status-Reason', $e->getMessage());
+        }
+    }
+);
 
-    $db->close ();
 
-    });
-
-$app->get('/mediums/', function () use ($app)
+// handle GET requests for /mediums
+$app->get('/mediums', function () use ($app)
     {
-    $db = db_connect();
-    $query = 'SELECT id, medium FROM medium';
-    $result = $db->query($query);
-
-    /* associative array */
-    while($row = $result->fetch_array(MYSQLI_ASSOC))
+    try
         {
-        $rows[] = $row;
+        // query database for all mediums
+        $mediums = R::getAll('SELECT * from medium');
+        if ($mediums)
+            {
+            // send response header for JSON content type
+            $app->response()->header('Content-Type', 'application/json');
+            // return JSON-encoded response body with query results
+            // first wrapping in an outer context 'mediums'
+            $result = array('mediums' => $mediums);
+            echo json_encode($result);
+            }
+        else
+            {
+            // else throw exception
+            throw new ResourceNotFoundException();
+            }
+        }
+    catch (ResourceNotFoundException $e)
+        {
+        // return 404 server error
+        $app->response()->status(404);
+        }
+    catch (Exception $e)
+        {
+        $app->response()->status(400);
+        $app->response()->header('X-Status-Reason', $e->getMessage());
+        }
+    }
+);
+
+$app->put('/medium/update/:id', function ($id) use ($app)
+    {
+    // get and decode JSON request body
+    $request = $app->request();
+    $body = $request->getBody();
+    $input = json_decode($body);
+    
+    // store modified entry
+    // return JSON-encoded response body
+    //
+    try
+        {
+        // query database for single entry
+        $record = R::findOne('medium', 'id=?', array($id));
+
+        // store modified record
+        // return JSON-encoded response body
+        if ($record)
+            {
+            $record->medium = (string)$input->medium;
+            R::store($record);
+            $app->response()->header('Content-Type', 'application/json');
+            echo json_encode(R::exportAll($record));
+            }
+        else
+            {
+            throw new ResourceNotFoundException();
+            }
+        }
+    catch (ResourceNotFoundException $e)
+        {
+        $app->response()->status(404);
+        }
+    catch (Exception $e)
+        {
+        $app->response()->status(400);
+        $app->response()->header('X-Status-Reason', $e->getMessage());
         }
 
-    /* free result set */
-    $result->free();
-    $db->close ();
+    }
+);
+ 
 
-    $result = array("mediums" => $rows);
-    $app->response->write(json_encode($result));
+// handle POST requests to /medium
+$app->post('/medium', function () use ($app)
+    {
+    try
+        {
+        // get and decode JSON request body
+        $request = $app->request();
+        $body = $request->getBody();
+        $input = json_decode($body); 
+        echo 'POST: body = '.$body.'  input = '.var_dump($input);
+        // store medium record
+        $record = R::dispense('medium');
+        $record->medium = (string)$input->medium;
+        $id = R::store($record);
+
+        // return JSON-encoded response body
+        $app->response()->header('Content-Type', 'application/json');
+        echo json_encode(R::exportAll($record));
+        } 
+    catch (Exception $e) 
+        {
+        echo 'POST exception! '.$e->getMessage();
+        $app->response()->status(400);
+        $app->response()->header('X-Status-Reason', $e->getMessage());
+        }
+    }
+);
+
+// handle DELETE requests to /medium/:id
+$app->delete('/medium/:id', function ($id) use ($app) 
+    {
+    try
+        {
+        // query database for record
+        $request = $app->request();
+        $record = R::findOne('medium', 'id=?', array($id));
+
+        // delete article
+        if ($record)
+            {
+            R::trash($record);
+            $app->response()->status(204);
+            } 
+        else 
+            {
+            throw new ResourceNotFoundException();
+            }
+        } 
+    catch (ResourceNotFoundException $e) 
+        {
+        $app->response()->status(404);
+        }
+    catch (Exception $e)
+        {
+        $app->response()->status(400);
+        $app->response()->header('X-Status-Reason', $e->getMessage());
+        }
     });
 
