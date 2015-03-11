@@ -18,7 +18,7 @@ $app->get('/prints/id/:awid', function ($awid) use ($app)
     $result->free();
     $db->close ();
 
-	 $result = array("prints" => $rows);
+	$result = array("prints" => $rows);
     $app->response->write(json_encode($result));
     
     });

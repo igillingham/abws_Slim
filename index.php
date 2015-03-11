@@ -9,6 +9,7 @@ $app = new \Slim\Slim(array('debug' => true,
                             'log.enabled' => true,
                             'log.level' => \Slim\Log::DEBUG 
                         ));
+$app->add(new \Slim\Middleware\ContentTypes());
 
 $app->response->headers->set('Content-Type', 'application/json');
 //$app->response->headers->set('Content-Type', 'text/plain');
@@ -21,6 +22,8 @@ require 'printformats.php';
 require 'mediums.php';
 require 'gallery.php';
 require 'customer.php';
+
+rb_connect();
 
 $app->run();
 

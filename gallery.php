@@ -1,5 +1,20 @@
 <?php
 
+
+$app->get('/rb/gallery/:id', function ($id) use ($app)
+    {
+    $rbres = R::getRow ( 'SELECT  id, gallery_name,street,town,postcode FROM gallery WHERE id=:id' , array(':id'=>$id) );
+    $result = array("gallery" => array ("id" => $rbres["id"],  "gallery_name"=> $rbres["gallery_name"],  "town"=> $rbres["town"],  "postcode"=> $rbres["postcode"]));
+    $app->response->write(json_encode($result));
+    });
+
+$app->put('/rb/gallery/:id/:name', function ($id, $name) use ($app)
+    {
+    $rbres = R::getRow ( 'SELECT  id, gallery_name,street,town,postcode FROM gallery WHERE id=:id' , array(':id'=>$id) );
+    $result = array("gallery" => array ("id" => $rbres["id"],  "gallery_name"=> $rbres["gallery_name"],  "town"=> $rbres["town"],  "postcode"=> $rbres["postcode"]));
+    $app->response->write(json_encode($result));
+    });
+
 $app->get('/gallery/:id', function ($id) use ($app)
     {
     $db = db_connect();
