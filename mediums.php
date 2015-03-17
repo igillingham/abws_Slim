@@ -5,7 +5,7 @@ $app->get('/medium/:id', function ($id) use ($app)
     try
         {
         // query database for single medium record
-        $record = R::findOne('medium', 'id=?', array($id));
+        $record = R::load('medium', 'id=?', $id);
 
         if ($record)
             {
@@ -81,7 +81,7 @@ $app->put('/medium/update/:id', function ($id) use ($app)
     try
         {
         // query database for single entry
-        $record = R::findOne('medium', 'id=?', array($id));
+        $record = R::load('medium', 'id=?', $id);
 
         // store modified record
         // return JSON-encoded response body
@@ -146,7 +146,7 @@ $app->delete('/medium/:id', function ($id) use ($app)
         {
         // query database for record
         $request = $app->request();
-        $record = R::findOne('medium', 'id=?', array($id));
+        $record = R::load('medium', 'id=?', $id);
 
         // delete article
         if ($record)
