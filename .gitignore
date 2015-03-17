@@ -1,0 +1,7 @@
+vendor/
+vendor/slim/slim/tests/
+composer.phar
+*~
+.DS_Store
+.settings
+
