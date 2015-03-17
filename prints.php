@@ -1,26 +1,107 @@
 <?php
-
-$app->get('/prints/id/:awid', function ($awid) use ($app)
+// handle GET requests for /print/:id
+$app->get('/print/:id', function ($id) use ($app)
     {
-
-    $db = db_connect();
-    $query = 'SELECT printcopy.limited_edition_serial, artwork.id, artwork.name FROM printcopy INNER JOIN artwork ON printcopy.artwork_id = artwork.id WHERE printcopy.artwork_id='.$awid.';';
-    $result = $db->query($query);
-
-    /* associative array */
-    while($row = $result->fetch_array(MYSQLI_ASSOC))
+    try
         {
-        /*$rowalt = array("awid"=>$result("id"), "editionserial"=>$result("limited_edition_serial")*/
-        $rows[] = $row;
-        }
-    
-    /* free result set */
-    $result->free();
-    $db->close ();
+        // query database for single medium record
+        $record = R::load('printcopy', $id);
 
-	$result = array("prints" => $rows);
-    $app->response->write(json_encode($result));
-    
-    });
+        if ($record)
+            {
+            // if found, return JSON response
+            $app->response()->header('Content-Type', 'application/json');
+            echo json_encode(R::exportAll($record));
+            }
+        else
+            {
+            // else throw exception
+            throw new ResourceNotFoundException();
+            }
+        }
+    catch (ResourceNotFoundException $e)
+        {
+        // return 404 server error
+        $app->response()->status(404);
+        }
+    catch (Exception $e)
+        {
+        $app->response()->status(400);
+        $app->response()->header('X-Status-Reason', $e->getMessage());
+        }
+    }
+);
+
+// handle GET requests for /prints
+$app->get('/prints', function () use ($app)
+    {
+    try
+        {
+        // query database for all printers
+        $records = R::getAll('SELECT id,artwork_id,limited_edition_serial from printcopy');
+        if ($records)
+            {
+            // send response header for JSON content type
+            $app->response()->header('Content-Type', 'application/json');
+            // return JSON-encoded response body with query results
+            // first wrapping in an outer context 'mediums'
+            $result = array('prints' => $records);
+            echo json_encode($result);
+            }
+        else
+            {
+            // else throw exception
+            throw new ResourceNotFoundException();
+            }
+        }
+    catch (ResourceNotFoundException $e)
+        {
+        // return 404 server error
+        $app->response()->status(404);
+        }
+    catch (Exception $e)
+        {
+        $app->response()->status(400);
+        $app->response()->header('X-Status-Reason', $e->getMessage());
+        }
+    }
+);
+
+// handle GET requests for /prints
+$app->get('/prints/artwork/:id', function ($id) use ($app)
+    {
+    try
+        {
+        // query database for all printers
+        $records = R::findAll('printcopy', 'artwork_id=?', array($id));
+        if ($records)
+            {
+            // send response header for JSON content type
+            $app->response()->header('Content-Type', 'application/json');
+            // return JSON-encoded response body with query results
+            // first wrapping in an outer context 'mediums'
+            $result = array('prints' => $records);
+            echo json_encode($result);
+            }
+        else
+            {
+            // else throw exception
+            throw new ResourceNotFoundException();
+            }
+        }
+    catch (ResourceNotFoundException $e)
+        {
+        // return 404 server error
+        $app->response()->status(404);
+        }
+    catch (Exception $e)
+        {
+        $app->response()->status(400);
+        $app->response()->header('X-Status-Reason', $e->getMessage());
+        }
+    }
+);
+
+
 
 

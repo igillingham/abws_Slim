@@ -1,44 +1,71 @@
 <?php
-
+// handle GET requests for /printer/:id
 $app->get('/printer/:id', function ($id) use ($app)
     {
-    $db = db_connect();
-    $db->autocommit ( FALSE );
-    $stmt = $db->prepare ( 'SELECT id, printer_name, town, street, postcode FROM printer WHERE id=?' );
-    $stmt->bind_param ( "i", $id );
-    $stmt->execute ();
-    $stmt->bind_result ( $id, $printer_name, $town, $street, $postcode );
-    while ( $stmt->fetch () )
+    try
         {
-        break;
+        // query database for single medium record
+        $record = R::load('printer', $id);
+
+        if ($record)
+            {
+            // if found, return JSON response
+            $app->response()->header('Content-Type', 'application/json');
+            echo json_encode(R::exportAll($record));
+            }
+        else
+            {
+            // else throw exception
+            throw new ResourceNotFoundException();
+            }
         }
-    $stmt->close ();
+    catch (ResourceNotFoundException $e)
+        {
+        // return 404 server error
+        $app->response()->status(404);
+        }
+    catch (Exception $e)
+        {
+        $app->response()->status(400);
+        $app->response()->header('X-Status-Reason', $e->getMessage());
+        }
+    }
+);
 
-    $result = array("printer" => array ("id" => $id, "name" => $printer_name, "town" => $town, "street" => $street, "postcode" => $postcode));
-    $app->response->write(json_encode($result));
-
-    $db->close ();
-
-    });
-
-
-$app->get('/printers/', function () use ($app)
+// handle GET requests for /mediums
+$app->get('/printers', function () use ($app)
     {
-    $db = db_connect();
-    $query = 'SELECT id, printer_name FROM printer WHERE 1';
-    $result = $db->query($query);
-
-    /* associative array */
-    while($row = $result->fetch_array(MYSQLI_ASSOC))
+    try
         {
-        $rows[] = $row;
+        // query database for all printers
+        $records = R::getAll('SELECT id,printer_name from printer');
+        if ($records)
+            {
+            // send response header for JSON content type
+            $app->response()->header('Content-Type', 'application/json');
+            // return JSON-encoded response body with query results
+            // first wrapping in an outer context 'mediums'
+            $result = array('printers' => $records);
+            echo json_encode($result);
+            }
+        else
+            {
+            // else throw exception
+            throw new ResourceNotFoundException();
+            }
         }
+    catch (ResourceNotFoundException $e)
+        {
+        // return 404 server error
+        $app->response()->status(404);
+        }
+    catch (Exception $e)
+        {
+        $app->response()->status(400);
+        $app->response()->header('X-Status-Reason', $e->getMessage());
+        }
+    }
+);
 
-    /* free result set */
-    $result->free();
-    $db->close ();
 
-    $result = array("printers" => $rows);
-    $app->response->write(json_encode($result));
-    });
 

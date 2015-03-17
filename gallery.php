@@ -1,57 +1,70 @@
 <?php
-
-
-$app->get('/rb/gallery/:id', function ($id) use ($app)
-    {
-    $rbres = R::getRow ( 'SELECT  id, gallery_name,street,town,postcode FROM gallery WHERE id=:id' , array(':id'=>$id) );
-    $result = array("gallery" => array ("id" => $rbres["id"],  "gallery_name"=> $rbres["gallery_name"],  "town"=> $rbres["town"],  "postcode"=> $rbres["postcode"]));
-    $app->response->write(json_encode($result));
-    });
-
-$app->put('/rb/gallery/:id/:name', function ($id, $name) use ($app)
-    {
-    $rbres = R::getRow ( 'SELECT  id, gallery_name,street,town,postcode FROM gallery WHERE id=:id' , array(':id'=>$id) );
-    $result = array("gallery" => array ("id" => $rbres["id"],  "gallery_name"=> $rbres["gallery_name"],  "town"=> $rbres["town"],  "postcode"=> $rbres["postcode"]));
-    $app->response->write(json_encode($result));
-    });
-
+// handle GET requests for /gallert/:id
 $app->get('/gallery/:id', function ($id) use ($app)
     {
-    $db = db_connect();
-    $db->autocommit ( FALSE );
-    $stmt = $db->prepare ( 'SELECT id, gallery_name,street,town,postcode FROM gallery WHERE id=?' );
-    $stmt->bind_param ( "i", $id );
-    $stmt->execute ();
-    $stmt->bind_result ( $id, $gallery_name,$street,$town,$postcode );
-    while ( $stmt->fetch () )
+    try
         {
-        break;
+        // query database for single medium record
+        $record = R::load('gallery', $id);
+
+        if ($record)
+            {
+            // if found, return JSON response
+            $app->response()->header('Content-Type', 'application/json');
+            echo json_encode(R::exportAll($record));
+            }
+        else
+            {
+            // else throw exception
+            throw new ResourceNotFoundException();
+            }
         }
-    $stmt->close ();
-    $result = array("gallery" => array ("id" => $id, "gallery_name" => $gallery_name, "town" => $town, "postcode" => $postcode));
-    $app->response->write(json_encode($result));
+    catch (ResourceNotFoundException $e)
+        {
+        // return 404 server error
+        $app->response()->status(404);
+        }
+    catch (Exception $e)
+        {
+        $app->response()->status(400);
+        $app->response()->header('X-Status-Reason', $e->getMessage());
+        }
+    }
+);
 
-    $db->close ();
-
-    });
-
-$app->get('/galleries/', function () use ($app)
+// handle GET requests for /galleries
+$app->get('/galleries', function () use ($app)
     {
-    $db = db_connect();
-    $query = 'SELECT id, gallery_name FROM gallery WHERE 1';
-    $result = $db->query($query);
-
-    /* associative array */
-    while($row = $result->fetch_array(MYSQLI_ASSOC))
+    try
         {
-        $rows[] = $row;
+        // query database for all galleries
+        $records = R::getAll('SELECT id,gallery_name from gallery');
+        if ($records)
+            {
+            // send response header for JSON content type
+            $app->response()->header('Content-Type', 'application/json');
+            // return JSON-encoded response body with query results
+            // first wrapping in an outer context 'mediums'
+            $result = array('galleris' => $records);
+            echo json_encode($result);
+            }
+        else
+            {
+            // else throw exception
+            throw new ResourceNotFoundException();
+            }
         }
+    catch (ResourceNotFoundException $e)
+        {
+        // return 404 server error
+        $app->response()->status(404);
+        }
+    catch (Exception $e)
+        {
+        $app->response()->status(400);
+        $app->response()->header('X-Status-Reason', $e->getMessage());
+        }
+    }
+);
 
-    /* free result set */
-    $result->free();
-    $db->close ();
-
-    $result = array("galleries" => $rows);
-    $app->response->write(json_encode($result));
-    });
 

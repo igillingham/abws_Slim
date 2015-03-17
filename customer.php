@@ -1,42 +1,72 @@
 <?php
-
+// handle GET requests for /customer/:id
 $app->get('/customer/:id', function ($id) use ($app)
     {
-    $db = db_connect();
-    $db->autocommit ( FALSE );
-    $stmt = $db->prepare ( 'SELECT id, name,address,email,phone_1,phone_2,notes FROM customer WHERE id=?' );
-    $stmt->bind_param ( "i", $id );
-    $stmt->execute ();
-    $stmt->bind_result ( $id, $name,$address,$email,$phone_1,$phone_2,$notes );
-    while ( $stmt->fetch () )
+    try
         {
-        break;
+        // query database for single medium record
+        $record = R::load('customer', $id);
+
+        if ($record)
+            {
+            // if found, return JSON response
+            $app->response()->header('Content-Type', 'application/json');
+            echo json_encode(R::exportAll($record));
+            }
+        else
+            {
+            // else throw exception
+            throw new ResourceNotFoundException();
+            }
         }
-    $stmt->close ();
-    $result = array("customer" => array ("id" => $id, "name" => $name, "address" => $address, "email" => $email, "phone_1" => $phone_1, "phone_2" => $phone_2, "notes" => $notes));
-    $app->response->write(json_encode($result));
+    catch (ResourceNotFoundException $e)
+        {
+        // return 404 server error
+        $app->response()->status(404);
+        }
+    catch (Exception $e)
+        {
+        $app->response()->status(400);
+        $app->response()->header('X-Status-Reason', $e->getMessage());
+        }
+    }
+);
 
-    $db->close ();
-
-    });
-
-$app->get('/customers/', function () use ($app)
+// handle GET requests for /customers
+$app->get('/customers', function () use ($app)
     {
-    $db = db_connect();
-    $query = 'SELECT id, name FROM customer WHERE 1';
-    $result = $db->query($query);
-
-    /* associative array */
-    while($row = $result->fetch_array(MYSQLI_ASSOC))
+    try
         {
-        $rows[] = $row;
+        // query database for all printers
+        $records = R::getAll('SELECT id,name from customer');
+        if ($records)
+            {
+            // send response header for JSON content type
+            $app->response()->header('Content-Type', 'application/json');
+            // return JSON-encoded response body with query results
+            // first wrapping in an outer context 'mediums'
+            $result = array('customers' => $records);
+            echo json_encode($result);
+            }
+        else
+            {
+            // else throw exception
+            throw new ResourceNotFoundException();
+            }
         }
+    catch (ResourceNotFoundException $e)
+        {
+        // return 404 server error
+        $app->response()->status(404);
+        }
+    catch (Exception $e)
+        {
+        $app->response()->status(400);
+        $app->response()->header('X-Status-Reason', $e->getMessage());
+        }
+    }
+);
 
-    /* free result set */
-    $result->free();
-    $db->close ();
 
-    $result = array("customers" => $rows);
-    $app->response->write(json_encode($result));
-    });
+
 
